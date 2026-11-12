@@ -7,11 +7,13 @@ export function MachineLevel({
   step,
   animMs,
   onOpenCpu,
+  onOpenEditor,
 }: {
   view: CpuView;
   step: StepInfo | null;
   animMs: number;
   onOpenCpu: () => void;
+  onOpenEditor: () => void;
 }) {
   const flow = systemFlow(step);
   const memoryHot = flow === 'ram-to-cpu' || flow === 'cpu-to-ram';
@@ -43,7 +45,10 @@ export function MachineLevel({
       <Sign text="电源" position={[1.55, 0.85, -1.05]} factor={9} />
       <Chipset />
       <Monitor value={latest} hot={screenHot} />
-      <Keyboard />
+      <Clickable onClick={onOpenEditor}>
+        <Keyboard />
+        <Sign text="键盘 · 打开程序" position={[3.15, 0.42, 1.25]} factor={8} />
+      </Clickable>
       {flow === 'ram-to-cpu' && (
         <Packet from={[-0.15, 0.45, -0.95]} to={[-1.05, 0.55, -0.35]} color="#8eb6ff" token={view.cycles} animMs={animMs} />
       )}

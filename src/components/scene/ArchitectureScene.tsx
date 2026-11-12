@@ -15,6 +15,7 @@ interface ArchitectureSceneProps {
   animMs: number;
   follow: boolean;
   onWebglFail: () => void;
+  onOpenEditor: () => void;
 }
 
 class SceneBoundary extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
@@ -34,7 +35,7 @@ class SceneBoundary extends Component<{ onFail: () => void; children: ReactNode 
   }
 }
 
-export function ArchitectureScene({ view, step, animMs, follow, onWebglFail }: ArchitectureSceneProps) {
+export function ArchitectureScene({ view, step, animMs, follow, onWebglFail, onOpenEditor }: ArchitectureSceneProps) {
   const [level, setLevel] = useState<LevelId>('machine');
   const [bit, setBit] = useState(0);
   const [homeToken, setHomeToken] = useState(0);
@@ -50,7 +51,7 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail }: A
       <SceneBoundary onFail={onWebglFail}>
         <Canvas
           shadows
-          camera={{ position: POSES.machine.position, fov: 40, near: 0.05, far: 80 }}
+          camera={{ position: [9.7, 7.9, 12.1], fov: 40, near: 0.05, far: 80 }}
           dpr={[1, 1.5]}
           gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
           performance={{ min: 0.5 }}
@@ -71,7 +72,9 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail }: A
             shadow-camera-bottom={-8}
             shadow-bias={-0.0005}
           />
-          {level === 'machine' && <MachineLevel view={view} step={step} animMs={animMs} onOpenCpu={() => go('cpu')} />}
+          {level === 'machine' && (
+            <MachineLevel view={view} step={step} animMs={animMs} onOpenCpu={() => go('cpu')} onOpenEditor={onOpenEditor} />
+          )}
           {level === 'cpu' && <CpuLevel view={view} step={step} animMs={animMs} onOpenAlu={() => go('alu')} />}
           {level === 'alu' && <AluLevel acc={view.acc} b={view.b} onOpenBit={(index) => { setBit(index); go('bit'); }} />}
           {level === 'bit' && (
@@ -137,11 +140,11 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail }: A
             </button>
           </div>
         </div>
-        <div className="arch-card">
-          <strong>{text.title}</strong>
-          <p>{text.body}</p>
-        </div>
       </div>
+      <aside className="arch-caption" aria-live="polite">
+        <strong>{step?.title ?? text.title}</strong>
+        <p>{step?.explanation ?? text.body}</p>
+      </aside>
     </div>
   );
 }
@@ -179,11 +182,12 @@ function Flight({
     if (!controls) return;
     aim.set(...pose.target);
     to.set(...pose.position);
-    from.copy(to).lerp(aim, -0.22);
+    const intro = level === 'machine' && homeToken === 0;
+    from.copy(to).lerp(aim, intro ? -0.95 : -0.22);
     camera.position.copy(from);
     controls.target.copy(aim);
     controls.update();
-    until.current = performance.now() + 650;
+    until.current = performance.now() + (intro ? 1700 : 650);
   }, [aim, camera, controls, from, homeToken, level, pose.position, pose.target, to]);
 
   useEffect(() => {

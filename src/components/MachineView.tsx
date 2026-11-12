@@ -72,6 +72,7 @@ export function MachineView(props: MachineViewProps) {
             animMs={props.animMs}
             follow={follow}
             onWebglFail={() => setMode('2d')}
+            onOpenEditor={() => undefined}
           />
         </Suspense>
       ) : (
@@ -81,7 +82,7 @@ export function MachineView(props: MachineViewProps) {
   );
 }
 
-function FlatMachine({ view, step, animMs, annotations }: MachineViewProps) {
+export function FlatMachine({ view, step, animMs, annotations }: MachineViewProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const phase = step?.phase ?? 'idle';
 
