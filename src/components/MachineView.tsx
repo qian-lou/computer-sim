@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { AluView, CpuView, Phase, RegId, StepInfo } from '../cpu/cpu';
 import { hexByte } from '../cpu/format';
+
+const BoardScene = lazy(() => import('./scene/BoardScene').then((module) => ({ default: module.BoardScene })));
 
 const REGISTERS: { id: RegId; name: string; role: string; hint: string }[] = [
   { id: 'pc', name: 'PC', role: '程序计数器', hint: '下一条要读的字节在内存的哪个地址' },
@@ -25,15 +27,32 @@ interface MachineViewProps {
   annotations: Record<number, string>;
 }
 
-export function MachineView({ view, step, animMs, annotations }: MachineViewProps) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const phase = step?.phase ?? 'idle';
+export function MachineView(props: MachineViewProps) {
+  const [mode, setMode] = useState<'3d' | '2d'>('3d');
+  const [follow, setFollow] = useState(true);
+  const phase = props.step?.phase ?? 'idle';
 
   return (
     <section className="panel machine" id="machine" data-phase={phase} aria-label="处理器和内存">
       <div className="panel-head">
         <h2>处理器</h2>
-        <p className="beat">{view.cycles === 0 ? '还没有开始' : `第 ${view.cycles} 拍`}</p>
+        <div className="view-switch">
+          <div className="view-toggle" role="group" aria-label="视图">
+            <button type="button" className={mode === '3d' ? 'on' : ''} aria-pressed={mode === '3d'} onClick={() => setMode('3d')}>
+              立体
+            </button>
+            <button type="button" className={mode === '2d' ? 'on' : ''} aria-pressed={mode === '2d'} onClick={() => setMode('2d')}>
+              平面
+            </button>
+          </div>
+          {mode === '3d' && (
+            <label className="follow">
+              <input type="checkbox" checked={follow} onChange={(event) => setFollow(event.target.checked)} />
+              镜头跟随
+            </label>
+          )}
+          <p className="beat">{props.view.cycles === 0 ? '还没有开始' : `第 ${props.view.cycles} 拍`}</p>
+        </div>
       </div>
 
       <ol className="phases">
@@ -44,6 +63,30 @@ export function MachineView({ view, step, animMs, annotations }: MachineViewProp
           </li>
         ))}
       </ol>
+
+      {mode === '3d' ? (
+        <Suspense fallback={<div className="scene-frame scene-loading">正在准备立体主板…</div>}>
+          <BoardScene
+            view={props.view}
+            step={props.step}
+            animMs={props.animMs}
+            follow={follow}
+            onWebglFail={() => setMode('2d')}
+          />
+        </Suspense>
+      ) : (
+        <FlatMachine {...props} />
+      )}
+    </section>
+  );
+}
+
+function FlatMachine({ view, step, animMs, annotations }: MachineViewProps) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const phase = step?.phase ?? 'idle';
+
+  return (
+    <div className="flat-machine" data-phase={phase}>
 
       <div className="units">
         <article className={`unit control phase-${phase}`}>
@@ -106,7 +149,7 @@ export function MachineView({ view, step, animMs, annotations }: MachineViewProp
         selected={selected}
         onSelect={setSelected}
       />
-    </section>
+    </div>
   );
 }
 
