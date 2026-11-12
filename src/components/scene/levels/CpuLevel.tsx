@@ -47,15 +47,17 @@ export function CpuLevel({
         <meshStandardMaterial map={die} color="#ffffff" roughness={0.42} metalness={0.45} />
       </mesh>
       <BondPads />
-      <Region position={BLOCKS.control} size={[1.15, 0.08, 0.8]} hot={step?.phase === 'decode' || step?.phase === 'fetch'} tint="#2f6ea8" />
+      <WireBonds />
+      <Bumps />
+      <Region position={BLOCKS.control} size={[1.15, 0.04, 0.8]} hot={step?.phase === 'decode' || step?.phase === 'fetch'} tint="#2f6ea8" />
       <Sign text="控制单元" position={[-1.15, 0.42, 0.45]} factor={14} />
-      <CellArray origin={[-1.55, 0.1, 0.15]} cols={8} rows={5} gap={0.08} />
+      <CellArray origin={[-1.55, 0.08, 0.1]} cols={22} rows={12} gap={0.045} />
       <Clickable onClick={onOpenAlu}>
         <Region position={BLOCKS.alu} size={[1.15, 0.1, 0.85]} hot={Boolean(step?.alu)} tint="#c4844a" />
         <Sign text="ALU · 点击看电路" position={[0.15, 0.48, 0.5]} factor={13} />
       </Clickable>
-      <Region position={BLOCKS.cache} size={[1.7, 0.06, 0.62]} hot={false} tint="#1d4a38" />
-      <CellArray origin={[-0.9, 0.1, -0.95]} cols={16} rows={6} gap={0.07} />
+      <Region position={BLOCKS.cache} size={[1.7, 0.03, 0.62]} hot={false} tint="#1d4a38" />
+      <CellArray origin={[-0.95, 0.08, -0.98]} cols={28} rows={10} gap={0.05} />
       <Sign text="L1 缓存阵列" position={[-0.2, 0.36, -0.7]} factor={15} />
       <Bundle from={[-0.4, 0.12, 0.5]} to={[0.9, 0.12, 0.2]} hot={Boolean(step?.activeBus)} />
       <Region position={BLOCKS.bus} size={[2.1, 0.05, 0.22]} hot={Boolean(step?.activeBus)} tint="#8a6a32" />
@@ -100,7 +102,7 @@ function Region({
       <meshStandardMaterial
         color={tint}
         transparent
-        opacity={0.55}
+        opacity={0.22}
         roughness={0.35}
         metalness={0.4}
         emissive={hot ? '#f0b429' : tint}
@@ -140,25 +142,84 @@ function CellArray({ origin, cols, rows, gap }: { origin: [number, number, numbe
 
 function BondPads() {
   const ref = useRef<THREE.InstancedMesh>(null);
+  const count = 40 * 2 + 24 * 2;
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
     const dummy = new THREE.Object3D();
     let index = 0;
-    for (let i = 0; i < 18; i += 1) {
-      dummy.position.set(-1.55 + i * 0.18, 0.05, 1.2);
+    for (let i = 0; i < 40; i += 1) {
+      dummy.position.set(-1.55 + i * 0.08, 0.07, 1.22);
       dummy.updateMatrix();
       mesh.setMatrixAt(index++, dummy.matrix);
-      dummy.position.set(-1.55 + i * 0.18, 0.05, -1.2);
+      dummy.position.set(-1.55 + i * 0.08, 0.07, -1.22);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index++, dummy.matrix);
+    }
+    for (let i = 0; i < 24; i += 1) {
+      dummy.position.set(-1.62, 0.07, -1.05 + i * 0.09);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index++, dummy.matrix);
+      dummy.position.set(1.62, 0.07, -1.05 + i * 0.09);
       dummy.updateMatrix();
       mesh.setMatrixAt(index++, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
   }, []);
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, 36]}>
-      <boxGeometry args={[0.08, 0.02, 0.08]} />
-      <meshStandardMaterial color="#e0c36a" metalness={0.9} roughness={0.22} />
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <boxGeometry args={[0.045, 0.015, 0.04]} />
+      <meshStandardMaterial color="#e6c56a" metalness={0.92} roughness={0.18} />
+    </instancedMesh>
+  );
+}
+
+function WireBonds() {
+  const geometry = useMemo(() => {
+    const geoms: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 18; i += 1) {
+      const x = -1.35 + i * 0.15;
+      const curve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(x, 0.08, 1.18),
+        new THREE.Vector3(x * 0.92, 0.28, 1.0),
+        new THREE.Vector3(x * 0.8, 0.08, 0.78),
+      );
+      geoms.push(new THREE.TubeGeometry(curve, 6, 0.006, 4, false));
+    }
+    return geoms;
+  }, []);
+  return (
+    <group>
+      {geometry.map((geo, index) => (
+        <mesh key={index} geometry={geo}>
+          <meshStandardMaterial color="#d5dbe3" metalness={0.9} roughness={0.2} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Bumps() {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const count = 16 * 10;
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dummy = new THREE.Object3D();
+    let index = 0;
+    for (let y = 0; y < 10; y += 1) {
+      for (let x = 0; x < 16; x += 1) {
+        dummy.position.set(-0.7 + x * 0.09, 0.06, -0.85 + y * 0.07);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(index++, dummy.matrix);
+      }
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  }, []);
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[0.012, 6, 6]} />
+      <meshStandardMaterial color="#e6c56a" metalness={0.9} roughness={0.22} />
     </instancedMesh>
   );
 }

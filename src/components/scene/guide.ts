@@ -34,9 +34,9 @@ export interface Pose {
 }
 
 export const POSES: Record<LevelId, Pose> = {
-  machine: { position: [5.4, 4.4, 6.4], target: [0.6, 0.55, 0.1] },
+  machine: { position: [2.7, 1.72, 3.55], target: [0.2, 0.95, 0.35] },
   cpu: { position: [0.05, 2.05, 2.35], target: [0, 0.12, 0.05] },
-  alu: { position: [0, 2.55, 4.35], target: [0, 0.35, 0] },
+  alu: { position: [0, 2.85, 5.55], target: [0, 0.42, 0] },
   bit: { position: [0.15, 2.35, 3.7], target: [0, 0.4, -0.2] },
   cmos: { position: [0.15, 1.85, 4.15], target: [0, 0.25, 0] },
 };

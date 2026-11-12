@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Bloom, EffectComposer, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
+import { Bloom, DepthOfField, EffectComposer, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { CpuView, StepInfo } from '../../cpu/cpu';
@@ -69,32 +69,41 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail, onO
           }}
           performance={{ min: 0.5 }}
         >
-          <color attach="background" args={['#1a212b']} />
-          <hemisphereLight args={['#f7f4ee', '#2a3340', 0.45]} />
-          <ambientLight intensity={0.18} />
+          <color attach="background" args={['#161b22']} />
+          <hemisphereLight args={['#f3efe6', '#2a3340', 0.42]} />
+          <ambientLight intensity={0.12} />
           <directionalLight
             castShadow={tier === 'high'}
-            position={[6, 9, 5]}
-            intensity={1.65}
+            position={[5.5, 7.5, 4.2]}
+            intensity={2.15}
             shadow-mapSize={tier === 'high' ? [2048, 2048] : [512, 512]}
-            shadow-camera-near={1}
-            shadow-camera-far={30}
-            shadow-camera-left={-8}
-            shadow-camera-right={8}
-            shadow-camera-top={8}
-            shadow-camera-bottom={-8}
-            shadow-bias={-0.0004}
+            shadow-camera-near={0.5}
+            shadow-camera-far={28}
+            shadow-camera-left={-7}
+            shadow-camera-right={7}
+            shadow-camera-top={7}
+            shadow-camera-bottom={-7}
+            shadow-bias={-0.00035}
           />
+          <directionalLight position={[-5, 3.2, -2]} intensity={0.85} color="#c5d4ff" />
+          <directionalLight position={[2, 2.2, 5]} intensity={0.35} color="#ffd8b0" />
           <Environment resolution={128} environmentIntensity={0.65}>
             <Lightformer form="rect" intensity={3} position={[0, 5, 1]} scale={[10, 4, 1]} color="#fff6ea" />
             <Lightformer form="rect" intensity={1.2} position={[-5, 2, 2]} scale={[4, 3, 1]} color="#d5e2ff" />
             <Lightformer form="rect" intensity={0.8} position={[5, 1.5, -2]} scale={[3, 2, 1]} color="#ffd2a8" />
           </Environment>
           {tier === 'high' && level === 'machine' && (
-            <ContactShadows position={[0.5, -0.02, 0.15]} opacity={0.45} scale={14} blur={2.4} far={4} frames={1} />
+            <ContactShadows position={[0.6, 0, 0.3]} opacity={0.42} scale={16} blur={2.2} far={5} frames={1} />
           )}
           {level === 'machine' && (
-            <MachineLevel view={view} step={step} animMs={animMs} onOpenCpu={() => go('cpu')} onOpenEditor={onOpenEditor} />
+            <MachineLevel
+              view={view}
+              step={step}
+              animMs={animMs}
+              dense={tier === 'high'}
+              onOpenCpu={() => go('cpu')}
+              onOpenEditor={onOpenEditor}
+            />
           )}
           {level === 'cpu' && <CpuLevel view={view} step={step} animMs={animMs} onOpenAlu={() => go('alu')} />}
           {level === 'alu' && <AluLevel acc={view.acc} b={view.b} onOpenBit={(index) => { setBit(index); go('bit'); }} />}
@@ -107,16 +116,22 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail, onO
             enableDamping
             dampingFactor={0.08}
             maxPolarAngle={Math.PI / 2.05}
-            minDistance={1.2}
+            minDistance={0.35}
+            zoomSpeed={1.35}
             maxDistance={18}
           />
           <Flight level={level} homeToken={homeToken} follow={follow} step={step} />
           {tier === 'high' ? (
             <EffectComposer multisampling={0} enableNormalPass>
               <SMAA />
-              <SSAO radius={0.08} intensity={4} luminanceInfluence={0.4} />
-              <Bloom intensity={0.35} luminanceThreshold={0.72} mipmapBlur />
-              <Vignette eskil={false} offset={0.2} darkness={0.5} />
+              <SSAO radius={0.06} intensity={3} luminanceInfluence={0.35} />
+              <DepthOfField
+                worldFocusDistance={level === 'machine' ? 6.2 : 3.4}
+                worldFocusRange={level === 'machine' ? 3.2 : 1.6}
+                bokehScale={1.15}
+              />
+              <Bloom intensity={0.22} luminanceThreshold={0.84} mipmapBlur />
+              <Vignette eskil={false} offset={0.18} darkness={0.42} />
             </EffectComposer>
           ) : (
             <EffectComposer multisampling={0}>
