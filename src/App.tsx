@@ -63,9 +63,11 @@ export function App() {
 
       <div className="hud-bottom">
         <button type="button" className={sheet === 'editor' ? 'primary' : ''} onClick={() => toggle('editor')}>
+          <HudIcon d="M4 5h10M4 8.5h10M4 12h6" />
           程序
         </button>
         <button type="button" className={sheet === 'isa' ? 'primary' : ''} onClick={() => toggle('isa')}>
+          <HudIcon d="M3.5 4.5h9v8h-9zM6 7.5h4M6 10h2.5" />
           指令
         </button>
         <Toolbar
@@ -86,10 +88,19 @@ export function App() {
           跟随
         </label>
         <button type="button" className={sheet === 'flat' ? 'primary' : ''} onClick={() => toggle('flat')}>
+          <HudIcon d="M3 4.5h10v8H3zM3 8h10M8 4.5v8" />
           平面
         </button>
       </div>
     </div>
+  );
+}
+
+function HudIcon({ d }: { d: string }) {
+  return (
+    <svg className="hud-icon" viewBox="0 0 16 16" aria-hidden="true">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
   );
 }
 

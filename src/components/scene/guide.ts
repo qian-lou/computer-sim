@@ -35,10 +35,10 @@ export interface Pose {
 
 export const POSES: Record<LevelId, Pose> = {
   machine: { position: [5.4, 4.4, 6.4], target: [0.6, 0.55, 0.1] },
-  cpu: { position: [0.15, 3.3, 4.3], target: [0, 0.15, 0] },
-  alu: { position: [0, 3.6, 5.6], target: [0, 0.2, 0] },
-  bit: { position: [0.2, 3.2, 5.2], target: [0, 0.35, 0] },
-  cmos: { position: [0.2, 2.4, 4.2], target: [0, 0.4, 0] },
+  cpu: { position: [0.05, 2.05, 2.35], target: [0, 0.12, 0.05] },
+  alu: { position: [0, 2.55, 4.35], target: [0, 0.35, 0] },
+  bit: { position: [0.15, 2.35, 3.7], target: [0, 0.4, -0.2] },
+  cmos: { position: [0.15, 1.85, 4.15], target: [0, 0.25, 0] },
 };
 
 export interface MachineSnapshot {

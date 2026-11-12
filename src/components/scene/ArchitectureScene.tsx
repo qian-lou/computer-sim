@@ -1,5 +1,6 @@
-import { OrbitControls } from '@react-three/drei';
+import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Bloom, EffectComposer, SMAA, SSAO, Vignette } from '@react-three/postprocessing';
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { CpuView, StepInfo } from '../../cpu/cpu';
@@ -37,6 +38,12 @@ class SceneBoundary extends Component<{ onFail: () => void; children: ReactNode 
 
 export function ArchitectureScene({ view, step, animMs, follow, onWebglFail, onOpenEditor }: ArchitectureSceneProps) {
   const [level, setLevel] = useState<LevelId>('machine');
+  const [tier, setTier] = useState<'high' | 'low'>('high');
+  useEffect(() => {
+    const narrow = window.matchMedia('(max-width: 800px), (pointer: coarse)').matches;
+    const weak = navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+    setTier(narrow || weak ? 'low' : 'high');
+  }, []);
   const [bit, setBit] = useState(0);
   const [homeToken, setHomeToken] = useState(0);
   const added = useMemo(() => rippleAdd(view.acc, view.b), [view.acc, view.b]);
@@ -52,26 +59,40 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail, onO
         <Canvas
           shadows
           camera={{ position: [9.7, 7.9, 12.1], fov: 40, near: 0.05, far: 80 }}
-          dpr={[1, 1.5]}
-          gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
+          dpr={tier === 'high' ? [1, 1.75] : [1, 1.1]}
+          gl={{
+            antialias: tier === 'high',
+            powerPreference: 'high-performance',
+            alpha: false,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingExposure: 1.05,
+          }}
           performance={{ min: 0.5 }}
         >
-          <color attach="background" args={['#12161c']} />
-          <hemisphereLight args={['#f4f7fb', '#2a3340', 0.55]} />
-          <ambientLight intensity={0.25} />
+          <color attach="background" args={['#1a212b']} />
+          <hemisphereLight args={['#f7f4ee', '#2a3340', 0.45]} />
+          <ambientLight intensity={0.18} />
           <directionalLight
-            castShadow
+            castShadow={tier === 'high'}
             position={[6, 9, 5]}
-            intensity={1.55}
-            shadow-mapSize={[1024, 1024]}
+            intensity={1.65}
+            shadow-mapSize={tier === 'high' ? [2048, 2048] : [512, 512]}
             shadow-camera-near={1}
             shadow-camera-far={30}
             shadow-camera-left={-8}
             shadow-camera-right={8}
             shadow-camera-top={8}
             shadow-camera-bottom={-8}
-            shadow-bias={-0.0005}
+            shadow-bias={-0.0004}
           />
+          <Environment resolution={128} environmentIntensity={0.65}>
+            <Lightformer form="rect" intensity={3} position={[0, 5, 1]} scale={[10, 4, 1]} color="#fff6ea" />
+            <Lightformer form="rect" intensity={1.2} position={[-5, 2, 2]} scale={[4, 3, 1]} color="#d5e2ff" />
+            <Lightformer form="rect" intensity={0.8} position={[5, 1.5, -2]} scale={[3, 2, 1]} color="#ffd2a8" />
+          </Environment>
+          {tier === 'high' && level === 'machine' && (
+            <ContactShadows position={[0.5, -0.02, 0.15]} opacity={0.45} scale={14} blur={2.4} far={4} frames={1} />
+          )}
           {level === 'machine' && (
             <MachineLevel view={view} step={step} animMs={animMs} onOpenCpu={() => go('cpu')} onOpenEditor={onOpenEditor} />
           )}
@@ -88,9 +109,20 @@ export function ArchitectureScene({ view, step, animMs, follow, onWebglFail, onO
             maxPolarAngle={Math.PI / 2.05}
             minDistance={1.2}
             maxDistance={18}
-            target={POSES[level].target}
           />
           <Flight level={level} homeToken={homeToken} follow={follow} step={step} />
+          {tier === 'high' ? (
+            <EffectComposer multisampling={0} enableNormalPass>
+              <SMAA />
+              <SSAO radius={0.08} intensity={4} luminanceInfluence={0.4} />
+              <Bloom intensity={0.35} luminanceThreshold={0.72} mipmapBlur />
+              <Vignette eskil={false} offset={0.2} darkness={0.5} />
+            </EffectComposer>
+          ) : (
+            <EffectComposer multisampling={0}>
+              <Bloom intensity={0.2} luminanceThreshold={0.85} mipmapBlur />
+            </EffectComposer>
+          )}
         </Canvas>
       </SceneBoundary>
       <div className="arch-overlay">
@@ -172,23 +204,26 @@ function Flight({
     | { target: THREE.Vector3; update: () => void; addEventListener: (t: string, fn: () => void) => void; removeEventListener: (t: string, fn: () => void) => void }
     | null;
   const until = useRef(0);
+  const started = useRef(0);
+  const duration = useRef(800);
   const dragging = useRef(false);
   const pose = POSES[level];
   const from = useMemo(() => new THREE.Vector3(), []);
   const to = useMemo(() => new THREE.Vector3(), []);
+  const aimFrom = useMemo(() => new THREE.Vector3(), []);
   const aim = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
     if (!controls) return;
+    aimFrom.copy(controls.target);
     aim.set(...pose.target);
     to.set(...pose.position);
     const intro = level === 'machine' && homeToken === 0;
-    from.copy(to).lerp(aim, intro ? -0.95 : -0.22);
-    camera.position.copy(from);
-    controls.target.copy(aim);
-    controls.update();
-    until.current = performance.now() + (intro ? 1700 : 650);
-  }, [aim, camera, controls, from, homeToken, level, pose.position, pose.target, to]);
+    from.copy(intro ? to.clone().lerp(aim, -0.9) : camera.position);
+    duration.current = intro ? 1800 : 900;
+    started.current = performance.now();
+    until.current = started.current + duration.current;
+  }, [aim, aimFrom, camera, controls, from, homeToken, level, pose.position, pose.target, to]);
 
   useEffect(() => {
     if (!controls) return;
@@ -208,17 +243,24 @@ function Flight({
   }, [controls]);
 
   useFrame(() => {
-    if (!controls || dragging.current || performance.now() > until.current) {
-      if (controls && follow && level === 'cpu' && !dragging.current) {
+    if (!controls || dragging.current) return;
+    if (performance.now() >= until.current) {
+      if (until.current > 0) {
+        camera.position.copy(to);
+        controls.target.copy(aim);
+        controls.update();
+        until.current = 0;
+      } else if (follow && level === 'cpu') {
         const key = dieFocus(step);
         const point = key ? DIE_FOCUS[key] : null;
         if (point) controls.target.lerp(new THREE.Vector3(...point), 0.04);
       }
       return;
     }
-    const blend = 0.12;
-    camera.position.lerp(to, blend);
-    controls.target.lerp(aim, blend);
+    const t = Math.min(1, (performance.now() - started.current) / duration.current);
+    const eased = 1 - (1 - t) ** 3;
+    camera.position.lerpVectors(from, to, eased);
+    controls.target.lerpVectors(aimFrom, aim, eased);
     controls.update();
   });
 

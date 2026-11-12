@@ -1,4 +1,6 @@
-import { Clickable, Sign, Wire } from '../parts';
+import { useLayoutEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { Clickable, Sign, Wire, gateGeometry } from '../parts';
 import { cmosNand, fullAdderSignals, rippleAdd, type Bit } from '../logic';
 
 export function AluLevel({
@@ -23,15 +25,21 @@ export function AluLevel({
         return (
           <group key={bit.index}>
             <Clickable onClick={() => onOpenBit(bit.index)}>
-              <mesh position={[x, 0.28, 0]}>
-                <boxGeometry args={[0.72, 0.5, 0.7]} />
+              <mesh position={[x, 0.32, 0]} castShadow>
+                <boxGeometry args={[0.62, 0.42, 0.62]} />
                 <meshStandardMaterial
-                  color={bit.cout ? '#e7b15a' : '#3d6b8a'}
+                  color={bit.cout ? '#e7c27a' : '#35586e'}
+                  metalness={0.35}
+                  roughness={0.4}
                   emissive={bit.cout ? '#f0b429' : '#000'}
-                  emissiveIntensity={bit.cout ? 0.4 : 0}
+                  emissiveIntensity={bit.cout ? 0.45 : 0}
                 />
               </mesh>
-              <Sign text={`FA${bit.index}  S${bit.sum}`} position={[x, 0.72, 0]} factor={4.2} />
+              <mesh position={[x, 0.54, 0.32]}>
+                <sphereGeometry args={[0.05, 10, 10]} />
+                <meshStandardMaterial color={bit.sum ? '#ffe08a' : '#667'} emissive={bit.sum ? '#ffb020' : '#000'} emissiveIntensity={bit.sum ? 1 : 0} />
+              </mesh>
+              <Sign text={`FA${bit.index}  S${bit.sum}`} position={[x, 0.78, 0]} factor={4.6} />
             </Clickable>
             {bit.index < 7 && (
               <Wire
@@ -43,7 +51,8 @@ export function AluLevel({
           </group>
         );
       })}
-      <Sign text="低位 → 高位，进位沿黄线传递" position={[0, 0.2, 0.85]} factor={8} />
+      <CarryPins />
+      <Sign text="低位 → 高位，进位沿黄线传递" position={[0, 0.15, 1.15]} factor={14} />
     </group>
   );
 }
@@ -90,8 +99,38 @@ export function AdderLevel({
       <Wire a={[-0.2, 0.35, -0.85]} b={[1.1, 0.35, -0.85]} on={signals.and2 === 1} />
       <Wire a={[0.55, 0.35, 0.15]} b={[1.95, 0.35, 0.2]} on={signals.sum === 1} />
       <Wire a={[1.8, 0.35, -0.85]} b={[2.15, 0.35, -0.85]} on={signals.cout === 1} />
-      <Sign text={`第 ${bitIndex} 位`} position={[0, 1.15, 1.2]} factor={6} />
+      <Sign text={`第 ${bitIndex} 位`} position={[0, 1.35, -1.45]} factor={14} />
     </group>
+  );
+}
+
+function CarryPins() {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dummy = new THREE.Object3D();
+    let index = 0;
+    for (let bit = 0; bit < 8; bit += 1) {
+      const x = (bit - 3.5) * 0.95;
+      for (const side of [-1, 1]) {
+        for (let pin = 0; pin < 4; pin += 1) {
+          dummy.position.set(x - 0.18 + pin * 0.12, 0.14, side * 0.36);
+          dummy.rotation.set(0, 0, 0);
+          dummy.scale.set(1, 1, 1);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(index, dummy.matrix);
+          index += 1;
+        }
+      }
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  }, []);
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, 64]}>
+      <boxGeometry args={[0.035, 0.16, 0.035]} />
+      <meshStandardMaterial color="#e0c36a" metalness={0.9} roughness={0.22} />
+    </instancedMesh>
   );
 }
 
@@ -107,92 +146,119 @@ function Lamp({ label, at, on }: { label: string; at: [number, number, number]; 
   );
 }
 
-function Gate({ name, title, at, on }: { name: string; title: string; at: [number, number, number]; on: boolean }) {
-  const color = name === 'AND' ? '#3d8f5a' : name === 'OR' ? '#3d6b8a' : '#7a5ea8';
+function Gate({ name, title, at, on }: { name: 'AND' | 'OR' | 'XOR'; title: string; at: [number, number, number]; on: boolean }) {
+  const color = name === 'AND' ? '#2f8f57' : name === 'OR' ? '#2f6f92' : '#6d4f96';
   return (
     <group position={at}>
-      <mesh>
-        <boxGeometry args={[0.55, 0.42, 0.7]} />
-        <meshStandardMaterial color={color} emissive={on ? '#f0b429' : '#000'} emissiveIntensity={on ? 0.35 : 0} />
+      <mesh geometry={gateGeometry(name)} rotation={[Math.PI / 2, 0, 0]}>
+        <meshStandardMaterial color={color} metalness={0.25} roughness={0.38} emissive={on ? '#f0b429' : '#000'} emissiveIntensity={on ? 0.4 : 0} />
       </mesh>
       {name === 'XOR' && (
-        <mesh position={[-0.32, 0, 0]}>
-          <boxGeometry args={[0.06, 0.36, 0.62]} />
-          <meshStandardMaterial color="#efe6ff" />
+        <mesh position={[-0.28, 0, 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.16, 0.015, 6, 12, Math.PI]} />
+          <meshStandardMaterial color="#efe8ff" />
         </mesh>
       )}
-      <Sign text={title} position={[0, 0.4, 0]} factor={4.2} />
+      <Sign text={title} position={[0, 0.42, 0]} factor={4.4} />
     </group>
   );
 }
 
 export function CmosLevel({ a, b }: { a: Bit; b: Bit }) {
   const gate = cmosNand(a, b);
+  const pullUp = gate.pmosA || gate.pmosB;
+  const pullDown = gate.nmosA && gate.nmosB;
   return (
     <group>
-      <Rail y={1.7} label="Vdd" color="#c45c4a" />
-      <Rail y={-1.45} label="GND" color="#22262c" />
-      <Transistor kind="PMOS" on={gate.pmosA} position={[-0.55, 1.05, 0]} />
-      <Transistor kind="PMOS" on={gate.pmosB} position={[0.55, 1.05, 0]} />
-      <Transistor kind="NMOS" on={gate.nmosA} position={[0, 0.15, 0]} />
-      <Transistor kind="NMOS" on={gate.nmosB} position={[0, -0.7, 0]} />
-      <Wire a={[0, 1.7, 0]} b={[-0.55, 1.35, 0]} on={gate.pmosA} />
-      <Wire a={[0, 1.7, 0]} b={[0.55, 1.35, 0]} on={gate.pmosB} />
-      <Wire a={[-0.55, 0.75, 0]} b={[0, 0.45, 0]} on={gate.pmosA || gate.pmosB} />
-      <Wire a={[0.55, 0.75, 0]} b={[0, 0.45, 0]} on={gate.pmosA || gate.pmosB} />
-      <Wire a={[0, 0.45, 0]} b={[0, -0.05, 0]} on={gate.nmosA && gate.nmosB} />
-      <Wire a={[0, -0.35, 0]} b={[0, -0.5, 0]} on={gate.nmosA && gate.nmosB} />
-      <Wire a={[0, -1.0, 0]} b={[0, -1.45, 0]} on={gate.nmosA && gate.nmosB} />
-      <LampOut value={gate.output} />
-      <Sign text={`A = ${a}`} position={[-1.5, 0.7, 0]} factor={5} />
-      <Sign text={`B = ${b}`} position={[-1.5, -0.2, 0]} factor={5} />
-      <Sign text="与非门 · 输出在右边" position={[0, 2.15, 0]} factor={6} />
+      <mesh position={[0, 0.1, -0.12]}>
+        <boxGeometry args={[3.4, 2.5, 0.28]} />
+        <meshStandardMaterial color="#c9a3ab" roughness={0.72} />
+      </mesh>
+      <mesh position={[0, 0.7, -0.02]}>
+        <boxGeometry args={[3.1, 0.7, 0.22]} />
+        <meshStandardMaterial color="#e4d2bc" roughness={0.6} />
+      </mesh>
+      <Doped x={-0.7} y={0.85} on={gate.pmosA} color="#a33b48" label="P+" />
+      <Doped x={0.7} y={0.85} on={gate.pmosB} color="#a33b48" label="P+" />
+      <Poly x={-0.7} y={0.95} on={gate.pmosA} name="PMOS A" />
+      <Poly x={0.7} y={0.95} on={gate.pmosB} name="PMOS B" />
+      <Doped x={0} y={-0.15} on={gate.nmosA} color="#2f7a45" label="N+" />
+      <Doped x={0} y={-0.7} on={gate.nmosB} color="#2f7a45" label="N+" />
+      <Poly x={0} y={-0.05} on={gate.nmosA} name="NMOS A" />
+      <Poly x={0} y={-0.6} on={gate.nmosB} name="NMOS B" />
+      {pullUp && <Channel x={gate.pmosA ? -0.7 : 0.7} y={0.85} />}
+      {pullDown && (
+        <>
+          <Channel x={0} y={-0.15} />
+          <Channel x={0} y={-0.7} />
+        </>
+      )}
+      <mesh position={[0, 1.45, 0.08]}>
+        <boxGeometry args={[2.8, 0.08, 0.08]} />
+        <meshStandardMaterial color="#d0d5dc" metalness={0.9} roughness={0.2} emissive="#c45c4a" emissiveIntensity={0.25} />
+      </mesh>
+      {[-0.92, -0.48, 0.48, 0.92].map((x) => (
+        <mesh key={x} position={[x, 1.15, 0.16]}>
+          <cylinderGeometry args={[0.035, 0.035, 0.52, 10]} />
+          <meshStandardMaterial color="#d5dbe3" metalness={0.92} roughness={0.18} />
+        </mesh>
+      ))}
+      <mesh position={[0, -0.95, 0.16]}>
+        <cylinderGeometry args={[0.035, 0.035, 0.5, 10]} />
+        <meshStandardMaterial color="#d5dbe3" metalness={0.92} roughness={0.18} />
+      </mesh>
+      <mesh position={[0, -1.25, 0.08]}>
+        <boxGeometry args={[2.8, 0.08, 0.08]} />
+        <meshStandardMaterial color="#22262c" metalness={0.7} roughness={0.3} />
+      </mesh>
+      <Sign text="Vdd" position={[1.7, 1.45, 0.1]} factor={5} />
+      <Sign text="GND" position={[1.7, -1.25, 0.1]} factor={5} />
+      <Sign text={`A = ${a}`} position={[-1.7, 0.9, 0.2]} factor={5} />
+      <Sign text={`B = ${b}`} position={[-1.7, -0.4, 0.2]} factor={5} />
+      <Sign text={`输出 ${gate.output}`} position={[1.55, 0.15, 0.25]} factor={4.8} />
+      <Sign text="衬底剖面 · 与非门" position={[0, 1.9, 0]} factor={6} />
     </group>
   );
 }
 
-function Rail({ y, label, color }: { y: number; label: string; color: string }) {
+function Doped({ x, y, on, color, label }: { x: number; y: number; on: boolean; color: string; label: string }) {
   return (
-    <group position={[0, y, 0]}>
-      <mesh>
-        <boxGeometry args={[2.4, 0.08, 0.16]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} metalness={0.4} roughness={0.4} />
+    <group position={[x, y, 0.08]}>
+      <mesh position={[-0.22, 0, 0]}>
+        <boxGeometry args={[0.18, 0.16, 0.08]} />
+        <meshStandardMaterial color={color} emissive={on ? color : '#000'} emissiveIntensity={on ? 0.35 : 0} />
       </mesh>
-      <Sign text={label} position={[1.45, 0, 0]} factor={5} />
+      <mesh position={[0.22, 0, 0]}>
+        <boxGeometry args={[0.18, 0.16, 0.08]} />
+        <meshStandardMaterial color={color} emissive={on ? color : '#000'} emissiveIntensity={on ? 0.35 : 0} />
+      </mesh>
+      <Sign text={label} position={[0.55, 0, 0]} factor={6} />
     </group>
   );
 }
 
-function Transistor({ kind, on, position }: { kind: 'PMOS' | 'NMOS'; on: boolean; position: [number, number, number] }) {
-  const body = kind === 'PMOS' ? '#6a4a78' : '#2f6b4a';
+function Poly({ x, y, on, name }: { x: number; y: number; on: boolean; name: string }) {
   return (
-    <group position={position}>
+    <group position={[x, y, 0.16]}>
       <mesh>
-        <boxGeometry args={[0.55, 0.18, 0.45]} />
-        <meshStandardMaterial color="#8d939b" metalness={0.55} roughness={0.35} />
+        <boxGeometry args={[0.5, 0.05, 0.06]} />
+        <meshStandardMaterial color="#6a5a42" metalness={0.2} roughness={0.45} />
       </mesh>
-      <mesh position={[0, 0.12, 0]}>
-        <boxGeometry args={[0.7, 0.06, 0.12]} />
-        <meshStandardMaterial color={on ? '#ffe08a' : body} emissive={on ? '#ffb020' : '#000'} emissiveIntensity={on ? 0.9 : 0} />
+      <mesh position={[0, -0.04, 0]}>
+        <boxGeometry args={[0.16, 0.02, 0.05]} />
+        <meshStandardMaterial color="#d7e7ff" transparent opacity={0.8} />
       </mesh>
-      <mesh position={[0, 0, 0.18]}>
-        <boxGeometry args={[0.22, 0.1, 0.08]} />
-        <meshStandardMaterial color={body} />
-      </mesh>
-      <Sign text={`${kind} ${on ? '导通' : '截止'}`} position={[0, 0.38, 0]} factor={4} />
+      <Sign text={`${name} ${on ? '导通' : '截止'}`} position={[0, 0.22, 0]} factor={4.8} />
     </group>
   );
 }
 
-function LampOut({ value }: { value: Bit }) {
-  const on = value === 1;
+function Channel({ x, y }: { x: number; y: number }) {
   return (
-    <group position={[1.55, 0.4, 0]}>
-      <mesh>
-        <sphereGeometry args={[0.16, 16, 16]} />
-        <meshStandardMaterial color={on ? '#ffe08a' : '#66707a'} emissive={on ? '#ffb020' : '#000'} emissiveIntensity={on ? 1.2 : 0} />
-      </mesh>
-      <Sign text={`输出 ${value}`} position={[0, 0.4, 0]} factor={4.5} />
-    </group>
+    <mesh position={[x, y, 0.1]}>
+      <boxGeometry args={[0.28, 0.04, 0.02]} />
+      <meshStandardMaterial color="#fff1c2" emissive="#ffb020" emissiveIntensity={1.6} toneMapped={false} />
+    </mesh>
   );
 }
+
