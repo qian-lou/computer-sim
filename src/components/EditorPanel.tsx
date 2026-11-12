@@ -16,6 +16,33 @@ interface EditorPanelProps {
   onExample: (example: ExampleProgram) => void;
 }
 
+export function InstructionList() {
+  return (
+    <>
+      {ISA_GROUPS.map((group) => (
+        <div key={group} className="isa-group">
+          <h3>{group}</h3>
+          <ul className="isa-list">
+            {ISA.filter((entry) => entry.group === group).map((entry) => (
+              <li key={entry.opcode}>
+                <code>
+                  {hexByte(entry.opcode)} {entry.syntax}
+                </code>
+                <span>{entry.summary}</span>
+                <small>{entry.flags}</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <p className="isa-note">
+        数可以写成十进制、0x 十六进制或 0b 二进制，范围 0–255。标号以字母或下划线开头。分号或 // 后面是注释。
+        .org 地址 改写下一条字节的位置，.byte 写入数据。程序从第一条指令开始执行。
+      </p>
+    </>
+  );
+}
+
 function formatListing(entry: ListingEntry): string {
   const bytes = entry.bytes.map((value) => hexByte(value)).join(' ');
   return `${hexByte(entry.address)}  ${bytes.padEnd(8, ' ')} ${entry.source.trim()}`;
@@ -90,26 +117,7 @@ export function EditorPanel({
       )}
       <details className="isa">
         <summary>指令一览（{ISA.length} 条）</summary>
-        {ISA_GROUPS.map((group) => (
-          <div key={group} className="isa-group">
-            <h3>{group}</h3>
-            <ul className="isa-list">
-              {ISA.filter((entry) => entry.group === group).map((entry) => (
-                <li key={entry.opcode}>
-                  <code>
-                    {hexByte(entry.opcode)} {entry.syntax}
-                  </code>
-                  <span>{entry.summary}</span>
-                  <small>{entry.flags}</small>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-        <p className="isa-note">
-          数可以写成十进制、0x 十六进制或 0b 二进制，范围 0–255。标号以字母或下划线开头。分号或 // 后面是注释。
-          .org 地址 改写下一条字节的位置，.byte 写入数据。程序从第一条指令开始执行。
-        </p>
+        <InstructionList />
       </details>
     </section>
   );
