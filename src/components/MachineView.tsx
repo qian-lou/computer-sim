@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import type { AluView, CpuView, Phase, RegId, StepInfo } from '../cpu/cpu';
 import { hexByte } from '../cpu/format';
 
-const HouseScene = lazy(() => import('./scene/HouseScene').then((module) => ({ default: module.HouseScene })));
+const ArchitectureScene = lazy(() => import('./scene/ArchitectureScene').then((module) => ({ default: module.ArchitectureScene })));
 
 const REGISTERS: { id: RegId; name: string; role: string; hint: string }[] = [
   { id: 'pc', name: 'PC', role: '程序计数器', hint: '下一条要读的字节在内存的哪个地址' },
@@ -65,8 +65,8 @@ export function MachineView(props: MachineViewProps) {
       </ol>
 
       {mode === '3d' ? (
-        <Suspense fallback={<div className="scene-frame scene-loading">正在准备计算机小屋…</div>}>
-          <HouseScene
+        <Suspense fallback={<div className="scene-frame scene-loading">正在准备整机模型…</div>}>
+          <ArchitectureScene
             view={props.view}
             step={props.step}
             animMs={props.animMs}

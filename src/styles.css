@@ -399,6 +399,51 @@ textarea {
   padding: 0.35rem 0;
 }
 
+.arch-overlay {
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  pointer-events: none;
+  max-height: 42%;
+}
+
+.arch-card {
+  background: rgba(12, 16, 22, 0.82);
+  color: #e7eef4;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.arch-card p { margin: 0.15rem 0 0; }
+
+.arch-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.arch-nav button {
+  background: transparent;
+  border: 0;
+  color: #f0b429;
+  padding: 0;
+  border-radius: 6px;
+}
+
+.arch-nav button:disabled { color: #e7eef4; opacity: 1; cursor: default; }
+
+.arch-sep { color: #93a0b0; }
+
 .die-tag {
   font-family: var(--mono);
   color: #e7f2ec;
