@@ -84,12 +84,13 @@ h1, h2, h3, p { margin: 0; }
   max-height: 7.6rem;
   overflow: auto;
   pointer-events: auto;
-  background: rgba(12, 16, 22, 0.78);
+  background: rgba(14, 18, 26, 0.55);
   color: #e7eef4;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
-  padding: 0.55rem 0.7rem;
-  backdrop-filter: blur(10px);
+  padding: 0.6rem 0.75rem;
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .arch-caption strong { display: block; margin-bottom: 0.2rem; }
@@ -109,11 +110,12 @@ h1, h2, h3, p { margin: 0; }
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.45rem;
-  background: rgba(12, 16, 22, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.4rem 0.5rem;
+  background: rgba(14, 18, 26, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 18px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .hud-bottom .toolbar {
@@ -128,11 +130,19 @@ h1, h2, h3, p { margin: 0; }
 }
 
 .hud-bottom > button {
-  background: #24312c;
-  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(36, 49, 44, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   padding: 0.38rem 0.75rem;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
+
+.hud-bottom > button:hover { transform: translateY(-1px); }
+
+.hud-icon { width: 0.9rem; height: 0.9rem; }
 
 .hud-bottom > button.primary {
   background: var(--amber);
@@ -148,12 +158,18 @@ h1, h2, h3, p { margin: 0; }
   width: min(400px, calc(100vw - 1.4rem));
   max-height: calc(100vh - 9.2rem);
   overflow: auto;
-  padding: 0.7rem;
-  background: rgba(14, 18, 22, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.75rem;
+  background: rgba(14, 18, 26, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
-  backdrop-filter: blur(14px);
-  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  animation: dock-in 0.28s ease;
+}
+
+@keyframes dock-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
 .dock-left { left: 0.7rem; }
@@ -579,13 +595,15 @@ textarea {
 }
 
 .arch-card {
-  background: rgba(12, 16, 22, 0.82);
+  background: rgba(14, 18, 26, 0.5);
   color: #e7eef4;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
-  padding: 0.4rem 0.55rem;
+  padding: 0.45rem 0.6rem;
   font-size: 0.8rem;
   line-height: 1.45;
+  backdrop-filter: blur(16px) saturate(1.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .arch-card p { margin: 0.15rem 0 0; }
@@ -620,7 +638,7 @@ textarea {
   white-space: nowrap;
 }
 
-.die-tag b { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+.die-tag b { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
 .die-tag span { display: block; font-size: 13px; color: #f0b429; }
 .die-tag small { display: block; font-size: 9px; color: #b7c7bf; }
 .out-tag span { font-size: 22px; }
